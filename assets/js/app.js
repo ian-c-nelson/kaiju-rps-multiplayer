@@ -1,5 +1,7 @@
 /* Notes:
 
+upping my code-fu with prototyping
+
 Rock = Godzilla
 Paper = King Ghidorah
 Scissors = Mecha-Godzilla
@@ -29,8 +31,29 @@ var kaijuBattle = (function () {
 
     // UI manipulation events
     class UIController {
-        constructor() { }
+        constructor() { 
+            this.selectors = {
+                alertArea: "#alert-area",
+                chatArea: "#chat-area",
+                chatAreaBody: "#chat-area-body",
+                connectButton: "#connect-button",
+                playArea: "#play-area",
+                playAreaHeader: "#play-area-header",
+                playAreaBody: "#play-area-body",
+                resultsArea: "#results-area",
+                resultsAreaHeader: "#results-area-header",
+                resultsAreaBody: "#results-area-body",
+                scoresArea: "#scores-area",
+                scoresAreaBody: "#scores-area-body",
+                usernameDisplay: "#username-display",
+                usernameInput: "#username-input"
+           } 
+        }
     }
+
+    UIController.prototype.getDOMSelectors = function () {
+        return this.selectors;
+    };
 
     UIController.prototype.hideAlerts = function () {
         $(".alert").alert("close");
@@ -43,7 +66,7 @@ var kaijuBattle = (function () {
                 role: "alert"
             })
             .text(text)
-            .appendTo("#alert-area");
+            .appendTo(this.selectors.alertArea);
     };
 
 
@@ -76,7 +99,7 @@ var kaijuBattle = (function () {
                     },
                     {
                         name: "Mecha-Godzilla",
-                        giphyKey: "",
+                        giphyKey: "NchdLTjAjcbhC",
                         winAgainst: ["King Ghidorah"],
                         loseAgainst: ["Godzilla"],
                     }
@@ -107,10 +130,13 @@ var kaijuBattle = (function () {
     }
 
     GameController.prototype.init = function () {
+        // set up the listeners.
+        this.setUpListeners();
+
         // set the game in disconnected mode
         this.disconnect();
 
-        var test;
+        // iterate through the kaiju and test the GIFs
         this.data.getKaiju().forEach(kaiju => {
             this.giphy.getById(kaiju.giphyKey, function(response){
                 console.log(kaiju);
@@ -127,9 +153,23 @@ var kaijuBattle = (function () {
 
     };
 
+    GameController.prototype.setUpListeners = function () {
+        var dom = this.ui.getDOMSelectors();
+        $(dom.connectButton).on("click", this.onConnectButtonClick);
+    };
+
+    GameController.prototype.onConnectButtonClick = function () {
+        console.log("Connect button clicked.")
+    };
+
     GameController.prototype.onConnect = function () {
 
     };
+
+    GameController.prototype.onDisconnect = function () {
+
+    };
+
 
     $(document).ready(function(){
         var gameController = new GameController();
