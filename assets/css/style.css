@@ -1,0 +1,16 @@
+.outline {
+    border: solid black 1px;
+}
+
+.navbar-collapse > .row {
+    width: 100%;
+}
+
+.content {
+    margin-bottom: 3rem;
+}
+
+footer {
+    height: 2rem;
+    color: white;
+}
