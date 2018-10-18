@@ -28,11 +28,12 @@
                             </span>
                         </div>
                         <div class="col-12 col-lg-4">
-                            <div id="username-input" class="input-group mt-1">
-                                <input type="text" class="form-control" placeholder="Username" aria-label="Username"
-                                    aria-describedby="connect-button">
+                            <div id="username-input-group" class="input-group mt-1">
+                                <label for="username-input" class="sr-only">Username</label>
+                                <input id="username-input" type="text" class="form-control" placeholder="Username"
+                                    aria-label="Username" aria-describedby="join-button">
                                 <div class="input-group-append">
-                                    <button class="btn btn-secondary" type="button" id="connect-button">Connect</button>
+                                    <button class="btn btn-secondary" type="button" id="join-button">Join Game</button>
                                 </div>
                             </div>
                             <span class="navbar-text mt-1 d-none">
@@ -51,13 +52,46 @@
         <div id="alert-area">
         </div>
 
-        <div id="play-area" class="d-none">
+        <div id="play-area" class="d-nonexx">
             <div class="row">
                 <div class="col">
                     <div class="card mb-2">
-                        <div id="play-area-header" class="card-header">
+                        <div id="play-area-header" class="card-header text-center">
+                            <h3>Pick your kaiju before the timer runs out.</h3>
                         </div>
                         <div id="play-area-body" class="card-body">
+                            <div class="row">
+                                <div class="col-4">
+                                    <div id="player-card" class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Player</h5>
+                                            <p class="card-text">Choosing Kaiju</p>
+                                        </div>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item" value="Godzilla">Godzilla</li>
+                                            <li class="list-group-item" value="Mothra">Mothra</li>
+                                            <li class="list-group-item" value="King Ghidorah">King Ghidorah</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+
+                                </div>
+                                <div class="col-4">
+                                    <div id="opponent-card" class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Opponent</h5>
+                                            <p class="card-text">Choosing Kaiju</p>
+                                        </div>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item" value="Godzilla">Godzilla</li>
+                                            <li class="list-group-item" value="Mothra">Mothra</li>
+                                            <li class="list-group-item" value="King Ghidorah">King Ghidorah</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>

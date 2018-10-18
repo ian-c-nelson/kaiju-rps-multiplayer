@@ -1,3 +1,7 @@
+body { 
+    background-color: whitesmoke;
+}
+
 .outline {
     border: solid black 1px;
 }
