@@ -10,6 +10,11 @@ body {
     width: 100%;
 }
 
+.tab-pane {
+    border: 1px solid #dee2e6;
+    padding: 1rem;
+}
+
 .content {
     margin-bottom: 3rem;
 }

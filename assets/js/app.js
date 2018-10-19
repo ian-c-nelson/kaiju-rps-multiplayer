@@ -28,10 +28,13 @@ var kaijuBattle = (function () {
         constructor() {
             // create instances of the other controller classes
             this.ui = new UIController();
-            this.chat = new ChatController();
             this.data = new DataController();
             this.giphy = new GiphyController("ODSKMiaP8Gm6T6mwa6R28JvwZ42Imlx6", "PG");
         }
+    }
+
+    function init() {
+
     }
 
     GameController.prototype.init = function () {
@@ -52,16 +55,35 @@ var kaijuBattle = (function () {
 
     GameController.prototype.disconnect = function () {
         this.ui.showAlert("Enter a username and hit \"Join Game\" to begin browsing for a game.");
+        this.ui.toggleLogin("", true);
     };
 
     GameController.prototype.connect = function () {
+        console.log("Joining game as " + this.data.userName);
 
+        // Update the current user's info.
+        this.updateUserInfo(this.data.fb.userKey, {
+            name: this.data.userName, status: this.data.statuses.waitingForGame
+        })
+
+        this.data.connectedAt = moment().format("X");
+        this.ui.userNameInputVal("");
+        this.ui.toggleLogin(this.data.userName, false);
+        this.ui.showChatArea(true);
+        this.ui.hideAlerts();
+        this.ui.showAlert("You have been joined to the game queue.  Feel free to chat while you wait.");
     };
 
     GameController.prototype.setUpListeners = function () {
         // Connect Button Click
         var dom = this.ui.getDOMSelectors();
         $(dom.connectButton).on("click", this.onConnectButtonClick.bind(this));
+
+        // Chat Send button click
+        $(dom.chatSendButton).on("click", this.onChatSendButtonClick.bind(this));
+
+        // Chat Input Key Up
+        $(dom.chatInput).on("keyup", this.onChatInputKeyUp.bind(this));
 
         // Listen for connection status changes
         this.data.fb.onlineStatusRef.on("value", this.onOnlineStatusChange.bind(this));
@@ -72,35 +94,36 @@ var kaijuBattle = (function () {
         // Listen for users children removed
         this.data.fb.usersRef.on("child_removed", this.onUsersChildRemoved.bind(this));
 
+        // Listen for chat children added.
+        this.data.fb.chatRef.on("child_added", this.onChatChildAdded.bind(this));
 
+    };
+
+    GameController.prototype.onChatInputKeyUp = function (e) {
+        if (e.key === "Enter") {
+            this.addChatEntry(this.ui.chatInputVal())
+            this.ui.chatInputVal("");
+        }
+    };
+
+    GameController.prototype.onChatSendButtonClick = function () {
+        this.addChatEntry(this.ui.chatInputVal())
+        this.ui.chatInputVal("");
     };
 
     GameController.prototype.onConnectButtonClick = function () {
-        console.log("Connect button clicked.")
+        console.log("Join button clicked.")
 
-        var dom = this.ui.getDOMSelectors();
-        var $userNameInput = $(dom.usernameInput);
-        var $userNameDisplay = $(dom.usernameDisplay);
+        this.data.userName = this.ui.userNameInputVal();
 
-        var userName = $userNameInput.val().trim();
-
-        if (!userName) {
+        if (!this.data.userName) {
             return;
         }
 
-        // Update the current user's info.
-        this.updateUserInfo(this.data.fb.currentUserKey, {
-            name: userName, status: this.data.statuses.waitingForGame
-        })
-
-        // clear the input and hide it.
-        $userNameInput.closest(".input-group").toggleClass("d-none", true);
-        $userNameDisplay.text(userName);
-        $userNameDisplay.closest(".navbar-text").toggleClass("d-none", false);
+        this.connect();
     };
 
     GameController.prototype.onOnlineStatusChange = function (statusSnap) {
-
         // If they are connected..
         if (statusSnap.val()) {
             console.log("User is connected.")
@@ -110,7 +133,7 @@ var kaijuBattle = (function () {
                 "name": "Anonymous",
                 "status": this.data.statuses.idle
             });
-            this.data.fb.currentUserKey = user.key;
+            this.data.fb.userKey = user.key;
 
             // Remove user from the connection list when they disconnect.
             user.onDisconnect().remove();
@@ -126,7 +149,7 @@ var kaijuBattle = (function () {
 
         // Iterate through the other children and see if any are waiting for a game and don't have an opponent set.
         if (!childData.opponentKey
-            && childSnap.key === this.data.fb.currentUserKey
+            && childSnap.key === this.data.fb.userKey
             && childData.status === this.data.statuses.waitingForGame) {
 
             this.data.fb.usersRef.once('value', function (snapshot) {
@@ -148,7 +171,6 @@ var kaijuBattle = (function () {
                         childData.opponentKey = otherChildSnap.key;
                         this.updateUserInfo(childSnap.key, childData);
 
-
                         this.startGame(childSnap.key, otherChildSnap.key);
                     }
 
@@ -158,13 +180,23 @@ var kaijuBattle = (function () {
         }
     }
 
+    GameController.prototype.onChatChildAdded = function (childSnap) {
+        var childVal = childSnap.val();
+
+        console.log(childVal.userKey, this.data.fb.userKey, childVal.userKey === this.data.fb.userKey)
+
+        if (this.data.connectedAt && childVal.timeStamp > this.data.connectedAt) {
+            this.ui.addChatEntry(childVal, childVal.userKey === this.data.fb.userKey);
+        }
+    }
+
     GameController.prototype.startGame = function (player1key, player2key) {
         console.log(this);
 
         console.log("Starting Game")
         console.log("Player1", player1key);
         console.log("Player2", player2key);
-        
+
         var gameKey = this.data.fb.activeGamesRef.push({
             player1key: player1key,
             player2key: player2key,
@@ -192,8 +224,18 @@ var kaijuBattle = (function () {
         this.data.fb.activeGamesRef.child(key).set(value);
     };
 
+    GameController.prototype.addChatEntry = function (message) {
+        if (!message) {
+            return;
+        }
 
-
+        this.data.fb.chatRef.push({
+            userName: this.data.userName,
+            userKey: this.data.fb.userKey,
+            message: message,
+            timeStamp: moment().format("X")
+        });
+    }
 
     // Game data
     class DataController {
@@ -217,6 +259,8 @@ var kaijuBattle = (function () {
             this.fb.onlineStatusRef = this.fb.database.ref(".info/connected");
             this.fb.usersRef = this.fb.database.ref("/presence/users");
             this.fb.activeGamesRef = this.fb.database.ref("/activeGames");
+            this.fb.chatRef = this.fb.database.ref("/chat");
+
 
             // End Firebase
 
@@ -228,6 +272,8 @@ var kaijuBattle = (function () {
                 waitingForGame: "waitingForGame",
                 inGame: "inGame"
             };
+
+            this.systemUserName = "Kaiju Battle"
 
             // Define the kaiju
             // using arrays for win against/lose to so I can expand the number of kaiju beyond 3 at a later date. #goals
@@ -261,16 +307,15 @@ var kaijuBattle = (function () {
         }
     }
 
-
-
-
     // UI manipulation events
     class UIController {
         constructor() {
             this.selectors = {
                 alertArea: "#alert-area",
                 chatArea: "#chat-area",
-                chatAreaBody: "#chat-area-body",
+                chatInput: "#chat-input",
+                chatSendButton: "#chat-send-button",
+                chatEntryList: "#chat-entry-list",
                 connectButton: "#join-button",
                 playArea: "#play-area",
                 playAreaHeader: "#play-area-header",
@@ -286,9 +331,46 @@ var kaijuBattle = (function () {
         }
     }
 
+    UIController.prototype.addChatEntry = function (chatEntry, isCurrentUser) {
+        var $listEntry = $("<li>")
+            .addClass("list-group-item")
+            .html(chatEntry.message)
+            .appendTo(this.selectors.chatEntryList);
+
+        $("<span>")
+            .addClass("badge badge-" + (isCurrentUser ? "primary" : "info") + " mr-1")
+            .html("@" + chatEntry.userName)
+            .prependTo($listEntry);
+    };
+
     UIController.prototype.getDOMSelectors = function () {
         return this.selectors;
     };
+
+    UIController.prototype.chatInputVal = function () {
+        var dom = this.getDOMSelectors();
+        var $chatInput = $(dom.chatInput);
+
+        if (arguments[0] !== undefined) {
+            $chatInput.val(arguments[0]);
+            return;
+        }
+
+        return $chatInput.val().trim();
+    }
+
+    UIController.prototype.userNameInputVal = function () {
+        var dom = this.getDOMSelectors();
+        var $userNameInput = $(dom.usernameInput);
+
+        if (arguments[0] !== undefined) {
+            $userNameInput.val(arguments[0]);
+            return;
+        }
+
+        return $userNameInput.val().trim();
+    }
+
 
     UIController.prototype.hideAlerts = function () {
         $(".alert").alert("close");
@@ -304,12 +386,18 @@ var kaijuBattle = (function () {
             .appendTo(this.selectors.alertArea);
     };
 
-    // Controller for chat functionality
-    class ChatController {
-        constructor() {
+    UIController.prototype.showChatArea = function (show) {
+        $(this.selectors.chatArea).toggleClass("d-none", !show);
+    }
 
-        }
-    };
+    UIController.prototype.toggleLogin = function (userName, show) {
+        var dom = this.getDOMSelectors();
+        var $userNameInput = $(dom.usernameInput);
+        var $userNameDisplay = $(dom.usernameDisplay);
+        $userNameInput.closest(".input-group").toggleClass("d-none", !show);
+        $userNameDisplay.text(userName);
+        $userNameDisplay.closest(".navbar-text").toggleClass("d-none", show);
+    }
 
     // When the document loads get the ball rolling.
     $(document).ready(function () {
