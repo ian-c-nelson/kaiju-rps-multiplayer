@@ -28,23 +28,18 @@
                             </span>
                         </div>
                         <div class="col-12 col-lg-4">
-                            <div id="username-input-group" class="input-group mt-1">
-                                <label for="username-input" class="sr-only">Username</label>
-                                <input id="username-input" type="text" class="form-control" placeholder="Username"
-                                    aria-label="Username" aria-describedby="join-button">
-                                <div class="input-group-append">
-                                    <button class="btn btn-secondary" type="button" id="join-button">Join Game</button>
+                            <div class="input-group">
+                                <input id="user-name-input" type="text" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="button-addon4">
+                                <div class="input-group-append" id="button-addon4">
+                                    <button id="connect-button" class="btn btn-outline-light" type="button">Connect</button>
+                                    <button id="queue-button" class="btn btn-outline-light" type="button" disabled>Queue</button>
                                 </div>
                             </div>
-                            <span class="navbar-text mt-1 d-none">
-                                Connected as: <span id="username-display"></span>
-                            </span>
                         </div>
                     </div>
 
                 </div>
             </div>
-
         </nav>
     </header>
 
@@ -57,62 +52,47 @@
                 <div class="col">
                     <div class="card mb-2">
                         <div id="play-area-header" class="card-header text-center">
-                            <h3>Time Remaining: 30</h3>
+                            <h3>Waiting For Opponent Join</h3>
                         </div>
                         <div id="play-area-body" class="card-body">
                             <div class="row justify-content-center">
-                                <div class="col-4">
+                                <div class="col col-4">
                                     <div id="player-card" class="card">
-                                        <img class="card-img-top" src="https://placehold.it/200x100" alt="">
+                                        <img class="card-img-top d-none" src="https://placehold.it/200x100" alt="">
                                         <div class="card-body">
                                             <h5 class="card-title">Player</h5>
-                                            <p class="card-text">Text here</p>
+                                            <p class="card-text player-status">Waiting for Opponent to join.</p>
                                         </div>
                                         <ul class="list-group list-group-flush">
                                             <li class="list-group-item" value="Godzilla">Godzilla</li>
                                             <li class="list-group-item" value="Mothra">Mothra</li>
                                             <li class="list-group-item" value="King Ghidorah">King Ghidorah</li>
                                         </ul>
+                                        <div class="card-body">
+                                            <p class="card-text">Score: <span class="player-score"></span></p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col col-4">
                                     <div id="opponent-card" class="card">
-                                        <img class="card-img-top" src="https://placehold.it/200x100" alt="">
+                                        <img class="card-img-top d-none" src="https://placehold.it/200x100" alt="">
                                         <div class="card-body">
                                             <h5 class="card-title">Opponent</h5>
-                                            <p class="card-text">Waiting for Opponent to join.</p>
+                                            <p class="card-text opponent-status">Selecting Kaiju</p>
                                         </div>
                                         <ul class="list-group list-group-flush">
                                             <li class="list-group-item" value="Godzilla">Godzilla</li>
                                             <li class="list-group-item" value="Mothra">Mothra</li>
                                             <li class="list-group-item" value="King Ghidorah">King Ghidorah</li>
                                         </ul>
+                                        <div class="card-body">
+                                            <p class="card-text">Score: <span class="opponent-score"></span></p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="results-area" class="d-none">
-            <div class="card mb-2">
-                <div id="results-area-header" class="card-header">
-                </div>
-                <div id="results-area-body" class="card-body">
-                </div>
-            </div>
-        </div>
-
-        <div id="scores-area" class="d-none">
-            <div class="card mb-2">
-                <div class="card-header">
-                    <h6>Scores</h6>
-                </div>
-                <div id="scores-area-body" class="card-body">
-
                 </div>
             </div>
         </div>
