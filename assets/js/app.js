@@ -64,6 +64,23 @@ var kaijuBattle = (function () {
         this.ui.showAlert("Welcome to Kaiju Battle!  Feel free to hang out and chat; or click queue to play.");
     };
 
+    GameController.prototype.createNewGame = function (player1Key, player1Name) {
+        // Create a new game.
+        var game = this.data.fb.activeGamesRef.push({
+            player1Key: player1Key,
+            player1Name: player1Name,
+            player2Key: "",
+            player2Name: "",
+            player1Score: 0,
+            player2Score: 0,
+            player1Kaiju: 0,
+            player2Kaiju: 0,
+            timeLeft: -1
+        });
+        this.data.fb.gameKey = game.key;
+        game.onDisconnect().remove();
+    }
+
     GameController.prototype.disconnect = function () {
         this.ui.showAlert("Enter a username and hit \"Connect\" to  chat or play.");
         this.data.userStatus = this.data.statuses.offline;
@@ -75,6 +92,37 @@ var kaijuBattle = (function () {
     GameController.prototype.dequeue = function () {
         this.ui.showAlert("Hit \"Queue\" to begin browsing for a game.");
         this.ui.showPlayArea(false);
+    };
+
+    GameController.prototype.getGameInfo = function (key, postback) {
+        this.data.fb.activeGamesRef.child(key).once('value').then(function (gameSnap) {
+            postback(gameSnap.val());
+        });
+    };
+
+    GameController.prototype.getGameInfoByPlayerKey = function (key, postback) {
+        console.log(key, this.data.fb.activeGamesRef.child(key));
+        this.data.fb.activeGamesRef.once('value', function (snapshot) {
+            snapshot.forEach(function (childSnap) {
+                var childData = childSnap.val();
+
+                if (key === childData.player1Key || key === childData.player2Key) {
+                    postback({
+                        key: childSnap.key,
+                        gameInfo: childSnap.val()
+                    });
+                } else {
+                    postback(null);
+                }
+            }.bind(this));
+        }.bind(this));
+    };
+
+    GameController.prototype.getUserInfo = function (key, postback) {
+        console.log(key, this.data.fb.usersRef.child(key));
+        this.data.fb.usersRef.child(key).once('value').then(function (userSnap) {
+            postback(userSnap.val());
+        });
     };
 
     GameController.prototype.init = function () {
@@ -94,13 +142,6 @@ var kaijuBattle = (function () {
         // });
     };
 
-    GameController.prototype.getUserInfo = function (key, postback) {
-        console.log(key, this.data.fb.usersRef.child(key));
-        this.data.fb.usersRef.child(key).once('value').then(function (userSnap) {
-            postback(userSnap.val());
-        });
-    };
-
     GameController.prototype.killGame = function (gameKey) {
         this.data.fb.activeGamesRef.child(key).remove();
     };
@@ -110,7 +151,7 @@ var kaijuBattle = (function () {
         if (this.data.connectedAt && childVal.timeStamp > this.data.connectedAt) {
             this.ui.addChatEntry(childVal, childVal.userKey === this.data.fb.userKey);
         }
-    }
+    };
 
     GameController.prototype.onChatInputKeyUp = function (e) {
         if (e.key === "Enter") {
@@ -143,17 +184,27 @@ var kaijuBattle = (function () {
     GameController.prototype.onGameChildAdded = function (childSnap) {
         var childVal = childSnap.val();
         this.ui.updateGameArea(childVal, this.data.fb.userKey);
-    }
+    };
 
     GameController.prototype.onGameChildChanged = function (childSnap) {
         var childVal = childSnap.val();
         this.ui.updateGameArea(childVal, this.data.fb.userKey);
-    }
+    };
 
     GameController.prototype.onGameChildRemoved = function (childSnap) {
         var childVal = childSnap.val();
-        // TODO: Stuff
-    }
+
+        var isPlayer1 = this.data.fb.currentPlayerKey === childVal.player1Key;
+        var isPlayer2 = this.data.fb.currentPlayerKey === childVal.player2Key;
+
+        console.log("Game removed.");
+        console.log("Is Player One: " + isPlayer1);
+        console.log("Is Player Two: " + isPlayer2);
+
+        if (!isPlayer1 && !isPlayer2) {
+            return;
+        }
+    };
 
     GameController.prototype.onOnlineStatusChange = function (statusSnap) {
         // If they are connected..
@@ -186,42 +237,16 @@ var kaijuBattle = (function () {
 
     GameController.prototype.onUsersChildChanged = function (childSnap) {
         // var childData = childSnap.val();
-
-        // // Iterate through the other children and see if any are waiting for a game and don't have an opponent set.
-        // if (!childData.opponentKey
-        //     && childSnap.key === this.data.fb.userKey
-        //     && childData.status === this.data.statuses.waitingForGame) {
-
-        //     this.data.fb.usersRef.once('value', function (snapshot) {
-        //         snapshot.forEach(function (otherChildSnap) {
-        //             var otherChildData = otherChildSnap.val();
-
-        //             // if we find another user waiting for a game. grab their key, 
-        //             // then update both users statuses to inGame and start the game.
-        //             if (!otherChildData.opponentKey
-        //                 && otherChildSnap.key !== childSnap.key
-        //                 && otherChildData.status === this.data.statuses.waitingForGame) {
-
-
-        //                 // update opponent
-        //                 otherChildData.opponentKey = childSnap.key;
-        //                 this.updateUserInfo(otherChildSnap.key, otherChildData);
-
-        //                 // update current child
-        //                 childData.opponentKey = otherChildSnap.key;
-        //                 this.updateUserInfo(childSnap.key, childData);
-
-        //                 this.startGame(childSnap.key, otherChildSnap.key);
-        //             }
-
-
-        //         }.bind(this));
-        //     }.bind(this));
-        // }
+        // TODO: Status related UI things
     }
 
     GameController.prototype.onUsersChildRemoved = function (childSnap) {
-        // TODO: cleanup up game and notify any remaining players.
+        // TODO: cleanup up any games and notify any remaining players.
+        this.getGameInfoByPlayerKey(childSnap.key, function (info) {
+            if (info) {
+                this.killGame(info.key);
+            }
+        }.bind(this));
     };
 
     GameController.prototype.queue = function () {
@@ -270,19 +295,20 @@ var kaijuBattle = (function () {
     };
 
     GameController.prototype.startGame = function (playerKey, playerName) {
-        console.log(this);
 
         console.log("Starting Game")
         console.log("Player: " + playerName);
 
+        var gameFound = false;
         this.data.fb.activeGamesRef.once('value', function (snapshot) {
             snapshot.forEach(function (childSnap) {
+                gameFound = true;
                 var childData = childSnap.val();
 
                 console.log(childData.player1Key);
                 console.log(this.data.fb.usersRef.child(childData.player1Key));
 
-                if(!childData.player1Key) {
+                if (!childData.player1Key) {
                     this.killGame(childSnap.key);
                     return;
                 }
@@ -290,27 +316,58 @@ var kaijuBattle = (function () {
                 this.getUserInfo(childData.player1Key, function (userInfo) {
                     if (userInfo) {
                         if (!childData.player2Key) {
+                            // add yourself as player 2 and start the timer.
                             childData.player2Key = playerKey;
                             childData.player2Name = playerName;
+                            childData.timeLeft = this.data.baseRoundTime;
+                            this.startRoundTimer(childSnap.key);
                             this.updateGameInfo(childSnap.key, childData);
                         } else {
-                            this.data.fb.gameKey = this.data.fb.activeGamesRef.push({
-                                player1Key: playerKey,
-                                player1Name: playerName,
-                                player2Key: "",
-                                player2Name: "",
-                                player1Score: 0,
-                                player2Score: 0,
-                                player1Kaiju: 0,
-                                player2Kaiju: 0,
-                                timeLeft: 30
-                            });
+                            this.createNewGame(playerKey, playerName)
                         }
                     } else {
                         this.killGame(childSnap.key);
                     }
                 }.bind(this));
             }.bind(this));
+        }.bind(this));
+
+        if (!gameFound) {
+            console.log(this);
+
+            this.createNewGame(playerKey, playerName);
+        }
+    };
+
+    GameController.prototype.startRoundTimer = function (gameKey) {
+        if (this.data.roundTimerInterval) {
+            return;
+        }
+
+        this.data.roundTimerInterval = setInterval(function () {
+            this.getGameInfo(gameKey, function (gameInfo) {
+                if (gameInfo) {
+                    console.log("Updating timer.");
+                    console.log(gameInfo.timeLeft);
+
+                    gameInfo.timeLeft--;
+                    this.updateGameInfo(gameKey, gameInfo);
+                } else {
+                    this.stopRoundTimer(gameKey)
+                };
+            }.bind(this));
+        }.bind(this), 1000);
+    };
+
+    GameController.prototype.stopRoundTimer = function (gameKey) {
+        clearInterval(this.data.roundTimerInterval);
+        this.data.roundTimerInterval = null;
+
+        this.getGameInfo(gameKey, function (gameInfo) {
+            if (gameInfo) {
+                gameInfo.timeLeft = this.data.baseRoundTime;
+                this.updateGameInfo(gameKey, gameInfo);
+            }
         }.bind(this));
     };
 
@@ -359,9 +416,11 @@ var kaijuBattle = (function () {
                 online: "online",
             };
 
+            this.roundTimerInterval;
             this.systemUserName = "Kaiju Battle";
             this.userName = "Anonymous";
             this.userStatus = "idle";
+            this.baseRoundTime = 30;
 
             // Define the kaiju
             // using arrays for win against/lose to so I can expand the number of kaiju beyond 3 at a later date. #goals
@@ -500,8 +559,17 @@ var kaijuBattle = (function () {
             return;
         }
 
+        var $playArea = $(this.selectors.playArea);
         var $playerCard = $(this.selectors.playerCard);
         var $opponentCard = $(this.selectors.opponentCard);
+
+        if (gameInfo.timeLeft > 0) {
+            $playArea.find(".card-header h3").text(gameInfo.timeLeft + " seconds left to select your kaiju.");
+        } else if (gameInfo.timeLeft === 0) {
+            $playArea.find(".card-header h3").text("Time's up!");
+        } else {
+            // TODO ??
+        }
 
         if (isPlayer1) {
             $playerCard.find(".card-title").text(gameInfo.player1Name);
