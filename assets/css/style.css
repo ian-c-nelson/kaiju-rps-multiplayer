@@ -1,10 +1,21 @@
+@font-face {
+    font-family: odachi;
+    src: url(../fonts/Odachi.woff);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+
 body { 
     background-color: lightslategrey;
     background-image: url("../images/godzilla-bg-2.jpg");
     background-repeat: no-repeat; 
     background-size: cover;
     background-position: 0 60px;
-
+    font-family: odachi, cursive;
+    font-size: 18px;
 }
 
 .outline {
@@ -13,6 +24,10 @@ body {
 
 .navbar-collapse > .row {
     width: 100%;
+}
+
+.navbar-brand {
+    font-size: 30px;
 }
 
 .tab-pane {
@@ -32,7 +47,13 @@ body {
 }
 
 #play-area-body .list-group-item:hover {
-    background-color: blueviolet;
+    background-image: url("../images/godzilla-2-king-of-monsters-rodan-mothra-ghidorah-1003537-1280x0.jpg");
+    background-repeat: no-repeat; 
+    background-size: cover;
+
+    color: white;
+    font-weight: bold;
+    font-size: 20px;
 }
 
 footer {
