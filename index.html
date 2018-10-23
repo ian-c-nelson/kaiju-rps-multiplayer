@@ -29,7 +29,8 @@
                         </div>
                         <div class="col-12 col-lg-4">
                             <div class="input-group">
-                                <input id="user-name-input" type="text" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="button-addon4">
+                                <input id="user-name-input" type="text" class="form-control" placeholder="Username"
+                                    aria-label="Username" aria-describedby="button-addon4">
                                 <div class="input-group-append" id="button-addon4">
                                     <button id="connect-button" class="btn btn-outline-light" type="button">Connect</button>
                                     <button id="queue-button" class="btn btn-outline-light" type="button" disabled>Queue</button>
@@ -52,29 +53,26 @@
                 <div class="col">
                     <div class="card mb-2">
                         <div id="play-area-header" class="card-header text-center">
-                            <h3>Waiting For Opponent Join</h3>
+                            <h3>Waiting For Opponent</h3>
                         </div>
                         <div id="play-area-body" class="card-body">
                             <div class="row justify-content-center">
-                                <div class="col col-4">
-                                    <div id="player-card" class="card">
+                                <div class="col col-3">
+                                    <div id="player-card" class="card text-center">
                                         <img class="card-img-top d-none" src="https://placehold.it/200x100" alt="">
                                         <div class="card-body">
                                             <h5 class="card-title">Player</h5>
-                                            <p class="card-text player-status">Waiting for Opponent to join.</p>
+                                            <p class="card-text player-status">Waiting for Opponent</p>
                                         </div>
                                         <ul class="list-group list-group-flush">
                                             <li class="list-group-item" value="Godzilla">Godzilla</li>
                                             <li class="list-group-item" value="Mothra">Mothra</li>
                                             <li class="list-group-item" value="King Ghidorah">King Ghidorah</li>
                                         </ul>
-                                        <div class="card-body">
-                                            <p class="card-text">Score: <span class="player-score"></span></p>
-                                        </div>
                                     </div>
                                 </div>
-                                <div class="col col-4">
-                                    <div id="opponent-card" class="card">
+                                <div class="col col-3">
+                                    <div id="opponent-card" class="card text-center">
                                         <img class="card-img-top d-none" src="https://placehold.it/200x100" alt="">
                                         <div class="card-body">
                                             <h5 class="card-title">Opponent</h5>
@@ -85,8 +83,28 @@
                                             <li class="list-group-item" value="Mothra">Mothra</li>
                                             <li class="list-group-item" value="King Ghidorah">King Ghidorah</li>
                                         </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center scores mt-3">
+                                <div class="col col-2">
+                                    <div class="card">
                                         <div class="card-body">
-                                            <p class="card-text">Score: <span class="opponent-score"></span></p>
+                                            <p class="card-text">Wins: <span class="player-score"></span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col col-2">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <p class="card-text">Losses: <span class="opponent-score"></span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col col-2">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <p class="card-text">Played: <span class="rounds-played"></span></p>
                                         </div>
                                     </div>
                                 </div>

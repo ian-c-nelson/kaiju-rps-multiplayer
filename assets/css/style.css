@@ -1,5 +1,10 @@
 body { 
-    background-color: whitesmoke;
+    background-color: lightslategrey;
+    background-image: url("../images/godzilla-bg-2.jpg");
+    background-repeat: no-repeat; 
+    background-size: cover;
+    background-position: 0 60px;
+
 }
 
 .outline {
@@ -17,6 +22,17 @@ body {
 
 .content {
     margin-bottom: 3rem;
+}
+
+#play-area-body  {
+    background-image: url("../images/king_ghidorah_godzilla_series_classic_movie_by_darkoss002-davrmqz.png");
+    background-repeat: no-repeat; 
+    background-size: cover;
+    background-position: 0 -160px;
+}
+
+#play-area-body .list-group-item:hover {
+    background-color: blueviolet;
 }
 
 footer {
