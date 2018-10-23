@@ -206,6 +206,10 @@ var kaijuBattle = (function () {
         }
     };
 
+    GameController.prototype.onKaijuClick = function (event) {
+
+    };
+
     GameController.prototype.onOnlineStatusChange = function (statusSnap) {
         // If they are connected..
         if (statusSnap.val()) {
@@ -270,6 +274,9 @@ var kaijuBattle = (function () {
 
         // Chat Input Key Up
         $(dom.chatInput).on("keyup", this.onChatInputKeyUp.bind(this));
+
+        // On player's Kaiju list item click.
+        $(dom.playerKaiju).on("click", this.onKaijuClick.bind(this));
 
         // Listen for activeGames child added
         this.data.fb.activeGamesRef.on("child_added", this.onGameChildAdded.bind(this));
@@ -469,6 +476,7 @@ var kaijuBattle = (function () {
                 playAreaHeader: "#play-area-header",
                 playAreaBody: "#play-area-body",
                 playerCard: "#player-card",
+                playerKaiju: "#player-card .list-group-item",
                 queueButton: "#queue-button",
                 userNameInput: "#user-name-input"
             }

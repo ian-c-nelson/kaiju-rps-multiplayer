@@ -46,7 +46,11 @@ body {
     background-position: 0 -160px;
 }
 
-#play-area-body .list-group-item:hover {
+#play-area-body .list-group-item {
+    height: 50px;
+}
+
+#player-card .list-group-item:hover {
     background-image: url("../images/godzilla-2-king-of-monsters-rodan-mothra-ghidorah-1003537-1280x0.jpg");
     background-repeat: no-repeat; 
     background-size: cover;
