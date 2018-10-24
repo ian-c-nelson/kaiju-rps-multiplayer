@@ -16,6 +16,12 @@ https://media.giphy.com/media/Sj0JjNpkLCYJG/giphy.gif
 Mecha-Godzilla
 https://media.giphy.com/media/NchdLTjAjcbhC/giphy.gif
 
+Gigan
+https://media.giphy.com/media/wLjuKyykechlC/giphy.gif
+
+Mothra
+https://media.giphy.com/media/12Ek91HBQ4khAA/giphy.gif
+
 */
 
 
@@ -73,10 +79,17 @@ var kaijuBattle = (function () {
             player2Name: "",
             player1Score: 0,
             player2Score: 0,
-            player1Kaiju: 0,
-            player2Kaiju: 0,
-            timeLeft: -1
+            player1Kaiju: "",
+            player2Kaiju: "",
+            timeLeft: -1,
+            roundsPlayed: 0,
+            message: "",
+            endGame: false,
+            isIntermission: false,
+            roundWinner: "",
+            lastUpdatedBy: player1Key
         });
+
         this.data.fb.gameKey = game.key;
         game.onDisconnect().remove();
     }
@@ -116,6 +129,19 @@ var kaijuBattle = (function () {
                 }
             }.bind(this));
         }.bind(this));
+    };
+
+    GameController.prototype.getKaiju = function (kaijuName) {
+        var kaiju = $.grep(this.data.kaiju, function (k) {
+            return k.name === kaijuName;
+        });
+        console.log(kaijuName, kaiju);
+        return kaiju;
+    };
+
+    GameController.prototype.getRandomVictoryVerb = function () {
+        var randomIndex = Math.floor(Math.random() * this.data.victoryVerbs.length);
+        return this.data.victoryVerbs[randomIndex];
     };
 
     GameController.prototype.getUserInfo = function (key, postback) {
@@ -188,22 +214,79 @@ var kaijuBattle = (function () {
 
     GameController.prototype.onGameChildChanged = function (childSnap) {
         var childVal = childSnap.val();
+
+        // Only perform game logic if this is the same player who initiated the timer (player 2).
+        if (this.data.fb.userKey == childVal.player2Key) {
+
+            console.log("Player 1 Kaiju: " + childVal.player1Kaiju);
+            console.log("Player 2 Kaiju: " + childVal.player2Kaiju);
+
+            //if both kaiju are selected stop the time early.
+            if (childVal.player1Kaiju && childVal.player2Kaiju) {
+                childVal.timeLeft = 0;
+            }
+
+            console.log("Time Left: "+  childVal.timeLeft);
+
+            // If the timer is expired, calculate the results.
+            if (childVal.timeLeft === 0) {
+                // stop the timer and 
+                if(this.data.roundTimerInterval) {
+                    this.stopRoundTimer(childSnap.key);
+                }
+
+                childVal.roundsPlayed++;
+
+                if (childVal.player1Kaiju && !childVal.player2Kaiju) {
+                    // player 1 selected a kaiju but player 2 did not.
+                    childVal.player1Score++
+                    childVal.roundWinner = childVal.player1Key;
+                    childVal.message = childVal.player2Name + " was not able to summon a kaiju in time. " + childVal.player1Kaiju + " turns his wrath on the local population.";
+                } else if (childVal.player2Kaiju && !childVal.player1Kaiju) {
+                    // player 2 selected a kaiju but player 1 did not.
+                    childVal.player2Score++
+                    childVal.roundWinner = childVal.player2Key;
+                    childVal.message = childVal.player1Name + " was not able to summon a kaiju in time. " + childVal.player2Kaiju + " turns his wrath on the local population.";
+                } else if (!childVal.player2Kaiju && !childVal.player1Kaiju) {
+                    // neither player selected a kaiju.  End the game as the monsters head off into the sunset.
+                    childVal.message = "It appears that the kaiju have returned from whence they came.  Peace finally settles upon the land.";
+                    childVal.endGame = true;
+                } else {
+                    // both players selected kaiju. Fetch the kaiju object for player 1 and use it to check for victory.
+                    var p1kaiju = this.getKaiju(player1Kaiju);
+                    if (p1kaiju.winAgainst.indexOf(childVal.player2Kaiju) !== -1) {
+                        // player one's kaiju defeaths player two's kaiju
+                        childVal.player1Score++
+                        childVal.roundWinner = childVal.player1Key;
+                        childVal.message = childVal.player1Kaiju + " " + this.getRandomVictoryVerb() + " " + childVal.player2Kaiju + "!"
+                    } else if (p1kaiju.loseAgainst.indexOf(childVal.player2Kaiju) !== -1) {
+                        // player two's kaiju defeaths player one's kaiju
+                        childVal.player2Score++
+                        childVal.roundWinner = childVal.player2Key;
+                        childVal.message = childVal.player2Kaiju + " " + this.getRandomVictoryVerb() + " " + childVal.player1Kaiju + "!"
+                    } else {
+                        // the kaiju are tied.  This is not currently possible (stretch goals for more than three kaiju)
+                        childVal.message = childVal.player1Kaiju + " and " + childVal.player2Kaiju + " are evenly matched.  Their battle leaves them both bloody and weakened.  The surrounded area has been reduced to a radioactive wasteland.";
+                    }
+                }
+
+                childVal.timeLeft = -1;
+                // this.updateGameInfo(childSnap.key, childVal);
+            }
+        }
+
         this.ui.updateGameArea(childVal, this.data.fb.userKey);
     };
 
     GameController.prototype.onGameChildRemoved = function (childSnap) {
         var childVal = childSnap.val();
-
-        var isPlayer1 = this.data.fb.currentPlayerKey === childVal.player1Key;
-        var isPlayer2 = this.data.fb.currentPlayerKey === childVal.player2Key;
-
-        console.log("Game removed.");
-        console.log("Is Player One: " + isPlayer1);
-        console.log("Is Player Two: " + isPlayer2);
-
+        var isPlayer1 = this.data.fb.userKey === childVal.player1Key;
+        var isPlayer2 = this.data.fb.userKey === childVal.player2Key;
         if (!isPlayer1 && !isPlayer2) {
             return;
         }
+
+        // TODO: post game cleanup/notifications.
     };
 
     GameController.prototype.onKaijuClick = function (event) {
@@ -354,9 +437,6 @@ var kaijuBattle = (function () {
         this.data.roundTimerInterval = setInterval(function () {
             this.getGameInfo(gameKey, function (gameInfo) {
                 if (gameInfo) {
-                    console.log("Updating timer.");
-                    console.log(gameInfo.timeLeft);
-
                     gameInfo.timeLeft--;
                     this.updateGameInfo(gameKey, gameInfo);
                 } else {
@@ -369,16 +449,16 @@ var kaijuBattle = (function () {
     GameController.prototype.stopRoundTimer = function (gameKey) {
         clearInterval(this.data.roundTimerInterval);
         this.data.roundTimerInterval = null;
-
-        this.getGameInfo(gameKey, function (gameInfo) {
-            if (gameInfo) {
-                gameInfo.timeLeft = this.data.baseRoundTime;
-                this.updateGameInfo(gameKey, gameInfo);
-            }
-        }.bind(this));
     };
 
     GameController.prototype.updateGameInfo = function (key, value) {
+        if(!key || !value) {
+            return;
+        }
+
+        console.log("Updating Game Info.");
+        console.log(value);
+        value.lastUpdatedBy = this.data.fb.userKey;
         this.data.fb.activeGamesRef.child(key).set(value);
     };
 
@@ -427,7 +507,8 @@ var kaijuBattle = (function () {
             this.systemUserName = "Kaiju Battle";
             this.userName = "Anonymous";
             this.userStatus = "idle";
-            this.baseRoundTime = 30;
+            this.baseRoundTime = 20;
+            this.baseintermissionTime = 10;
 
             // Define the kaiju
             // using arrays for win against/lose to so I can expand the number of kaiju beyond 3 at a later date. #goals
@@ -435,23 +516,45 @@ var kaijuBattle = (function () {
                 {
                     name: "Godzilla",
                     giphyKey: "JeiW04NqNARKo",
-                    winAgainst: ["Mothra"],
-                    loseAgainst: ["Ghidorah"],
+                    winAgainst: ["Ghidorah"],
+                    loseAgainst: ["Mothra"],
                 },
                 {
                     name: "King Ghidorah",
-                    giphyKey: "Sj0JjNpkLCYJG",
-                    winAgainst: ["Godzilla"],
-                    loseAgainst: ["Mothra"],
+                    giphyKey: "12Ek91HBQ4khAA",
+                    winAgainst: ["Mothra"],
+                    loseAgainst: ["Godzilla"],
                 },
                 {
                     name: "Mothra",
                     giphyKey: "NchdLTjAjcbhC",
-                    winAgainst: ["King Ghidorah"],
-                    loseAgainst: ["Godzilla"],
+                    winAgainst: ["Godzilla"],
+                    loseAgainst: ["King Ghidorah"],
                 }
-            ]
+            ];
 
+            this.victoryVerbs = [
+                "annihilates",
+                "butchers",
+                "crushes",
+                "demolishes",
+                "destroys",
+                "devastates",
+                "eliminates",
+                "eradicates",
+                "erases",
+                "exterminates",
+                "lays waste to",
+                "massacres",
+                "mutilates",
+                "obliterates",
+                "ravages",
+                "shatters",
+                "slaughters",
+                "snuffs out",
+                "vaporizes",
+                "wrecks"
+            ];
 
             // end local data
 
@@ -515,18 +618,19 @@ var kaijuBattle = (function () {
     };
 
     UIController.prototype.showAlert = function (text) {
-        var $alert = $(".alert");
-        if (!$alert.exists()) {
-            $("<div>")
-                .attr({
-                    class: "alert alert-info my-2 text-center show fade",
-                    role: "alert"
-                })
-                .text(text)
-                .appendTo(this.selectors.alertArea);
-        } else {
-            $alert.text(text);
-        }
+        this.hideAlerts();
+
+        var $alert = $("<div>")
+            .attr({
+                class: "alert alert-info my-2 text-center show fade",
+                role: "alert"
+            })
+            .text(text)
+            .appendTo(this.selectors.alertArea);
+
+        setTimeout(function () {
+            $alert.alert("close");
+        }.bind(this), 3000);
     };
 
     UIController.prototype.showChatArea = function (show) {
@@ -562,6 +666,8 @@ var kaijuBattle = (function () {
         console.log("Updating Game Area.");
         console.log("Is Player One: " + isPlayer1);
         console.log("Is Player Two: " + isPlayer2);
+        console.log(gameInfo);
+        console.log(gameInfo.lastUpdatedBy);
 
         if (!isPlayer1 && !isPlayer2) {
             return;
@@ -571,21 +677,31 @@ var kaijuBattle = (function () {
         var $playerCard = $(this.selectors.playerCard);
         var $opponentCard = $(this.selectors.opponentCard);
 
+        // update the message bar.
         if (gameInfo.timeLeft > 0) {
-            $playArea.find(".card-header h3").text(gameInfo.timeLeft + " seconds left to select your kaiju.");
+            if (!gameInfo.isIntermission) {
+                $playArea.find(".card-header h3").text(gameInfo.timeLeft + " seconds left to select your kaiju.");
+            } else {
+                $playArea.find(".card-header h3").text(gameInfo.timeLeft + " seconds left until the next round begins.");
+            }
         } else if (gameInfo.timeLeft === 0) {
             $playArea.find(".card-header h3").text("Time's up!");
         } else {
-            // TODO ??
+            $playArea.find(".card-header h3").text(gameInfo.message);
         }
 
+        //Update the number of rounds played.
+        $playArea.find(".rounds-played").text(gameInfo.player1Score);
+
+        // if the active player is player one use player one's info in the player card and player two's info in the opponent card 
         if (isPlayer1) {
             $playerCard.find(".card-title").text(gameInfo.player1Name);
-            $playerCard.find(".player-score").text(gameInfo.player1Score);
+            $playArea.find(".player-score").text(gameInfo.player1Score);
+            $playArea.find(".opponent-score").text(gameInfo.player2Score);
 
+            // If there is a second player, show their card and populate both cards.
             if (gameInfo.player2Key) {
                 $opponentCard.find(".card-title").text(gameInfo.player2Name);
-                $opponentCard.find(".player-score").text(gameInfo.player2Score);
 
                 if (!gameInfo.player1Kaiju) {
                     $playerCard.find(".player-status").text("Select your kaiju.");
@@ -596,7 +712,11 @@ var kaijuBattle = (function () {
                 if (!gameInfo.player2Kaiju) {
                     $playerCard.find(".opponent-status").text("Selecting kaiju.");
                 } else {
-                    $playerCard.find(".opponent-status").text(gameInfo.player2Kaiju + " selected.");
+                    if (gameInfo.player1Kaiju) {
+                        $playerCard.find(".opponent-status").text(gameInfo.player2Kaiju + " selected.");
+                    } else {
+                        $playerCard.find(".opponent-status").text("Kaiju selected.");
+                    }
                 }
 
                 $opponentCard.closest(".col").removeClass("d-none");
@@ -605,14 +725,14 @@ var kaijuBattle = (function () {
             }
         }
 
+        // if the active player is player two use player two's info in the player card and player one's info in the opponent card 
         if (isPlayer2) {
             $playerCard.find(".card-title").text(gameInfo.player2Name);
-            $playerCard.find(".player-score").text(gameInfo.player2Score);
-
+            $playArea.find(".player-score").text(gameInfo.player2Score);
+            $playArea.find(".opponent-score").text(gameInfo.player1Score);
 
             if (gameInfo.player1Key) {
                 $opponentCard.find(".card-title").text(gameInfo.player1Name);
-                $opponentCard.find(".player-score").text(gameInfo.player1Score);
 
                 if (!gameInfo.player2Kaiju) {
                     $playerCard.find(".player-status").text("Select your kaiju.");
@@ -623,7 +743,11 @@ var kaijuBattle = (function () {
                 if (!gameInfo.player1Kaiju) {
                     $playerCard.find(".opponent-status").text("Selecting kaiju.");
                 } else {
-                    $playerCard.find(".opponent-status").text(gameInfo.player1Kaiju + " selected.");
+                    if (gameInfo.player2Kaiju) {
+                        $playerCard.find(".opponent-status").text(gameInfo.player1Kaiju + " selected.");
+                    } else {
+                        $playerCard.find(".opponent-status").text("Kaiju selected.");
+                    }
                 }
 
                 $opponentCard.closest(".col").removeClass("d-none");
