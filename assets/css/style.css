@@ -54,16 +54,27 @@ body {
 
 #play-area-body .list-group-item {
     height: 50px;
+    cursor: pointer;
 }
 
 #player-card .list-group-item:hover {
-    background-image: url("../images/godzilla-2-king-of-monsters-rodan-mothra-ghidorah-1003537-1280x0.jpg");
+    /* background-image: url("../images/godzilla-2-king-of-monsters-rodan-mothra-ghidorah-1003537-1280x0.jpg");
     background-repeat: no-repeat; 
-    background-size: cover;
+    background-size: cover; */
 
-    color: white;
+    background-color: silver;
+
+    /* color: white; */
     font-weight: bold;
     font-size: 20px;
+}
+
+#exit-game-button {
+    cursor: pointer;
+}
+
+#chat-area .list-group-item {
+    padding: 3px 5px;
 }
 
 footer {

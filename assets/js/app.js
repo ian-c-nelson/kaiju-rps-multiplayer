@@ -40,16 +40,19 @@ var kaijuBattle = (function () {
         }
     }
 
-    GameController.prototype.addChatEntry = function (message, userOnly) {
+    GameController.prototype.addSystemMessage = function (message, targetUserKey) {
+        this.addChatEntry(message, this.data.fb.systemUserKey, targetUserKey);
+    };
+
+    GameController.prototype.addChatEntry = function (message, sourceUserKey, targetUserKey) {
         if (!message) {
             return;
         }
 
         this.data.fb.chatRef.push({
-            userName: this.data.userName,
-            userKey: this.data.fb.userKey,
             message: message,
-            visibleTo: userOnly ? "user" : "all",
+            sourceUserKey: sourceUserKey || this.data.fb.userKey,
+            targetUserKey: targetUserKey || "all",
             timeStamp: moment().format("X")
         });
     };
@@ -67,7 +70,7 @@ var kaijuBattle = (function () {
         this.data.connectedAt = moment().format("X");
         this.ui.toggleLogin(true);
         this.ui.showChatArea(true);
-        this.ui.showAlert("Welcome to Kaiju Battle!  Feel free to hang out and chat; or click queue to play.");
+        this.addSystemMessage("Welcome to Kaiju Battle!  Feel free to hang out and chat; or click queue to play.", this.data.fb.userKey);
     };
 
     GameController.prototype.createNewGame = function (player1Key, player1Name) {
@@ -97,13 +100,18 @@ var kaijuBattle = (function () {
     GameController.prototype.disconnect = function () {
         this.ui.showAlert("Enter a username and hit \"Connect\" to  chat or play.");
         this.data.userStatus = this.data.statuses.offline;
+        this.data.fb.userKey = "";
+
+        if (this.data.fb.gameKey) {
+            this.killGameRecord(this.data.fb.gameKey);
+        }
 
         this.ui.showChatArea(false);
         this.ui.toggleLogin(false);
     };
 
     GameController.prototype.dequeue = function () {
-        this.ui.showAlert("Hit \"Queue\" to begin browsing for a game.");
+        this.addSystemMessage("Hit \"Queue\" to begin browsing for a game.", this.data.fb.userKey);
         this.ui.showPlayArea(false);
     };
 
@@ -152,12 +160,21 @@ var kaijuBattle = (function () {
     };
 
     GameController.prototype.init = function () {
+        // Make sure there is a system user in the database.
+        this.data.fb.usersRef.child(this.data.fb.systemUserKey).set({
+            "name": "Kaiju Battle",
+            "status": ""
+        });
+
         // set up the listeners.
         this.setUpListeners();
 
         // set the game in disconnected mode
         this.dequeue();
         this.disconnect();
+
+        // Init the tooltips.
+        $('[data-toggle="tooltip"]').tooltip();
 
         // // iterate through the kaiju and test the GIFs
         // this.data.kaiju().forEach(kaiju => {
@@ -168,14 +185,26 @@ var kaijuBattle = (function () {
         // });
     };
 
-    GameController.prototype.killGame = function (gameKey) {
+    GameController.prototype.killGameRecord = function (key) {
         this.data.fb.activeGamesRef.child(key).remove();
     };
 
     GameController.prototype.onChatChildAdded = function (childSnap) {
         var childVal = childSnap.val();
+
+
         if (this.data.connectedAt && childVal.timeStamp > this.data.connectedAt) {
-            this.ui.addChatEntry(childVal, childVal.userKey === this.data.fb.userKey);
+            var isTarget = childVal.targetUserKey === this.data.fb.userKey;
+
+            console.log(childVal, isTarget);
+
+            if (childVal.targetUserKey !== "all" && !isTarget) {
+                return;
+            }
+
+            this.getUserInfo(this.data.fb.userKey, function (userInfo) {
+                this.ui.addChatEntry(childVal, userInfo);
+            }.bind(this));
         }
     };
 
@@ -207,6 +236,14 @@ var kaijuBattle = (function () {
         }
     };
 
+    GameController.prototype.onExitGameButtonClick = function () {
+        if (!this.data.fb.gameKey) {
+            return;
+        }
+
+        this.killGameRecord(this.data.fb.gameKey);
+    };
+
     GameController.prototype.onGameChildAdded = function (childSnap) {
         var childVal = childSnap.val();
         this.ui.updateGameArea(childVal, this.data.fb.userKey);
@@ -226,12 +263,12 @@ var kaijuBattle = (function () {
                 childVal.timeLeft = 0;
             }
 
-            console.log("Time Left: "+  childVal.timeLeft);
+            console.log("Time Left: " + childVal.timeLeft);
 
             // If the timer is expired, calculate the results.
             if (childVal.timeLeft === 0) {
                 // stop the timer and 
-                if(this.data.roundTimerInterval) {
+                if (this.data.roundTimerInterval) {
                     this.stopRoundTimer(childSnap.key);
                 }
 
@@ -271,7 +308,7 @@ var kaijuBattle = (function () {
                 }
 
                 childVal.timeLeft = -1;
-                // this.updateGameInfo(childSnap.key, childVal);
+                this.updateGameInfo(childSnap.key, childVal);
             }
         }
 
@@ -286,7 +323,14 @@ var kaijuBattle = (function () {
             return;
         }
 
-        // TODO: post game cleanup/notifications.
+        this.data.fb.gameKey = "";
+        this.ui.showPlayArea(false);
+        this.addSystemMessage("You have exited the game, and it has been closed.", this.data.fb.userKey);
+
+        var opponentKey = isPlayer1 ? childVal.player2Key : childVal.player1Key;
+        if (opponentKey) {
+            this.addSystemMessage(this.data.userName + " has exited the game, and it has been closed.", opponentKey);
+        }
     };
 
     GameController.prototype.onKaijuClick = function (event) {
@@ -331,14 +375,13 @@ var kaijuBattle = (function () {
         // TODO: cleanup up any games and notify any remaining players.
         this.getGameInfoByPlayerKey(childSnap.key, function (info) {
             if (info) {
-                this.killGame(info.key);
+                this.killGameRecord(info.key);
             }
         }.bind(this));
     };
 
     GameController.prototype.queue = function () {
-        console.log("Queueing for game as " + this.data.userName);
-        this.ui.showAlert("You have been joined to the game queue.  Feel free to chat while you wait.");
+        this.addSystemMessage("You have been joined to the game queue.", this.data.fb.userKey);
         this.startGame(this.data.fb.userKey, this.data.userName);
     };
 
@@ -360,6 +403,8 @@ var kaijuBattle = (function () {
 
         // On player's Kaiju list item click.
         $(dom.playerKaiju).on("click", this.onKaijuClick.bind(this));
+
+        $(dom.exitGameButton).on("click", this.onExitGameButtonClick.bind(this));
 
         // Listen for activeGames child added
         this.data.fb.activeGamesRef.on("child_added", this.onGameChildAdded.bind(this));
@@ -399,7 +444,7 @@ var kaijuBattle = (function () {
                 console.log(this.data.fb.usersRef.child(childData.player1Key));
 
                 if (!childData.player1Key) {
-                    this.killGame(childSnap.key);
+                    this.killGameRecord(childSnap.key);
                     return;
                 }
 
@@ -416,7 +461,7 @@ var kaijuBattle = (function () {
                             this.createNewGame(playerKey, playerName)
                         }
                     } else {
-                        this.killGame(childSnap.key);
+                        this.killGameRecord(childSnap.key);
                     }
                 }.bind(this));
             }.bind(this));
@@ -452,7 +497,7 @@ var kaijuBattle = (function () {
     };
 
     GameController.prototype.updateGameInfo = function (key, value) {
-        if(!key || !value) {
+        if (!key || !value) {
             return;
         }
 
@@ -470,15 +515,17 @@ var kaijuBattle = (function () {
     class DataController {
         constructor() {
 
-            // Init Firebase
-            firebase.initializeApp({
-                apiKey: "AIzaSyALbQQlQf4npQb7ngEPcvgnmMUVs_yhH2I",
-                authDomain: "kaiju-rps-multiplayer.firebaseapp.com",
-                databaseURL: "https://kaiju-rps-multiplayer.firebaseio.com",
-                projectId: "kaiju-rps-multiplayer",
-                storageBucket: "kaiju-rps-multiplayer.appspot.com",
-                messagingSenderId: "229244481231"
-            });
+            if (!firebase.apps.length) {
+                // Init Firebase
+                firebase.initializeApp({
+                    apiKey: "AIzaSyALbQQlQf4npQb7ngEPcvgnmMUVs_yhH2I",
+                    authDomain: "kaiju-rps-multiplayer.firebaseapp.com",
+                    databaseURL: "https://kaiju-rps-multiplayer.firebaseio.com",
+                    projectId: "kaiju-rps-multiplayer",
+                    storageBucket: "kaiju-rps-multiplayer.appspot.com",
+                    messagingSenderId: "229244481231"
+                });
+            }
 
             // firebase container
             this.fb = {
@@ -489,7 +536,9 @@ var kaijuBattle = (function () {
             this.fb.usersRef = this.fb.database.ref("/presence/users");
             this.fb.activeGamesRef = this.fb.database.ref("/activeGames");
             this.fb.chatRef = this.fb.database.ref("/chat");
-
+            this.fb.gameKey = "";
+            this.fb.userKey = "";
+            this.fb.systemUserKey = "kaijuGame";
 
             // End Firebase
 
@@ -581,20 +630,38 @@ var kaijuBattle = (function () {
                 playerCard: "#player-card",
                 playerKaiju: "#player-card .list-group-item",
                 queueButton: "#queue-button",
-                userNameInput: "#user-name-input"
-            }
+                userNameInput: "#user-name-input",
+                exitGameButton: "#exit-game-button"
+            };
+
+            this.data = new DataController();
         }
+
+
     }
 
-    UIController.prototype.addChatEntry = function (chatEntry, isCurrentUser) {
+    UIController.prototype.addChatEntry = function (chatEntry, currentUserInfo) {
+        if (!chatEntry) {
+            return;
+        }
+
         var $listEntry = $("<li>")
             .addClass("list-group-item")
             .html(chatEntry.message)
-            .appendTo(this.selectors.chatEntryList);
+            .prependTo(this.selectors.chatEntryList);
+
+        var badgeType = "badge-";
+        if (chatEntry.sourceUserKey === this.data.fb.userKey) {
+            badgeType += "primary";
+        } else if (chatEntry.sourceUserKey === this.data.fb.systemUserKey) {
+            badgeType += "danger";
+        } else {
+            badgeType += "info";
+        }
 
         $("<span>")
-            .addClass("badge badge-" + (isCurrentUser ? "primary" : "info") + " mr-1")
-            .html("@" + chatEntry.userName)
+            .addClass("badge badge-pill " + badgeType + " mr-1")
+            .html("@" + currentUserInfo.userName)
             .prependTo($listEntry);
     };
 

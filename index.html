@@ -8,10 +8,23 @@
     <title>Kaiju Battle</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
         crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css" integrity="sha384-5sAR7xN1Nv6T6+dT2mhtzEpVJvfS3NScPQTrOxhwjIuvcA67KV2R5Jz6kr4abQsz"
+        crossorigin="anonymous">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 
 <body>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+        crossorigin="anonymous"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.5.4/firebase.js"></script>
+    <script src="https://cdn.jsdelivr.net/momentjs/2.12.0/moment.min.js"></script>
+    <script src="https://ian-c-nelson.github.io/giphy-controller/giphy-con.js"></script>
+    <script src="assets/js/app.js"></script>
+
     <header class="header">
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container">
@@ -61,13 +74,18 @@
                                     <div id="player-card" class="card text-center">
                                         <img class="card-img-top d-none" src="https://placehold.it/200x100" alt="">
                                         <div class="card-body">
+                                            <i id="exit-game-button" class="fas fa-times-circle fa-pull-right"></i>
                                             <h5 class="card-title">Player</h5>
                                             <p class="card-text player-status">Waiting for Opponent</p>
                                         </div>
                                         <ul class="list-group list-group-flush">
-                                            <li class="list-group-item" value="Godzilla">Godzilla</li>
-                                            <li class="list-group-item" value="Mothra">Mothra</li>
-                                            <li class="list-group-item" value="King Ghidorah">King Ghidorah</li>
+                                            <li class="list-group-item" value="Godzilla" data-toggle="tooltip"
+                                                data-placement="right" title="Wins against King Ghidorah, loses against Mothra.">Godzilla</li>
+                                            <li class="list-group-item" value="Mothra" data-toggle="tooltip"
+                                                data-placement="right" title="Wins against Godzilla, loses against King Ghidorah">Mothra</li>
+                                            <li class="list-group-item" value="King Ghidorah" data-toggle="tooltip"
+                                                data-placement="right" title="Wins against Mothra, loses against Godzilla">King
+                                                Ghidorah</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -79,9 +97,13 @@
                                             <p class="card-text opponent-status">Selecting Kaiju</p>
                                         </div>
                                         <ul class="list-group list-group-flush">
-                                            <li class="list-group-item" value="Godzilla">Godzilla</li>
-                                            <li class="list-group-item" value="Mothra">Mothra</li>
-                                            <li class="list-group-item" value="King Ghidorah">King Ghidorah</li>
+                                            <li class="list-group-item" value="Godzilla" data-toggle="tooltip"
+                                                data-placement="right" title="Wins against King Ghidorah, loses against Mothra.">Godzilla</li>
+                                            <li class="list-group-item" value="Mothra" data-toggle="tooltip"
+                                                data-placement="right" title="Wins against Godzilla, loses against King Ghidorah">Mothra</li>
+                                            <li class="list-group-item" value="King Ghidorah" data-toggle="tooltip"
+                                                data-placement="right" title="Wins against Mothra, loses against Godzilla">King
+                                                Ghidorah</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -144,16 +166,6 @@
         </div>
     </footer>
 
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
-        crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-        crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
-        crossorigin="anonymous"></script>
-    <script src="https://www.gstatic.com/firebasejs/5.5.4/firebase.js"></script>
-    <script src="https://cdn.jsdelivr.net/momentjs/2.12.0/moment.min.js"></script>
-    <script src="https://ian-c-nelson.github.io/giphy-controller/giphy-con.js"></script>
-    <script src="assets/js/app.js"></script>
 </body>
 
 </html>
