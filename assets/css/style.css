@@ -52,8 +52,17 @@ body {
     background-position: 0 -160px;
 }
 
-#play-area-body .list-group-item {
+
+#play-area-body .list-group-item  {
     height: 50px;
+}
+
+#play-area-body .list-group-item.selected  {
+    background-color: #d56c6c;
+    border-color: darkred;
+}
+
+#player-card .list-group-item {
     cursor: pointer;
 }
 
@@ -68,6 +77,7 @@ body {
     font-weight: bold;
     font-size: 20px;
 }
+
 
 #exit-game-button {
     cursor: pointer;
