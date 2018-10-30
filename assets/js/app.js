@@ -586,8 +586,8 @@ var kaijuBattle = (function () {
             };
 
             // other variables
-            this.baseIntermissionTime = 10;
-            this.baseRoundTime = 30;
+            this.baseIntermissionTime = 5;
+            this.baseRoundTime = 20;
             this.gameKey = "";
             this.roundTimerInterval;
             this.systemUserKey = "SystemUser";
