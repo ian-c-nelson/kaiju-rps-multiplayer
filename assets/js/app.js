@@ -452,7 +452,6 @@ var kaijuBattle = (function () {
     }
 
     GameController.prototype.onUsersChildRemoved = function (childSnap) {
-        // TODO: cleanup up any games and notify any remaining players.
         this.getGameInfoByPlayerKey(childSnap.key, function (info) {
             if (info) {
                 this.killGameRecord(info.key);
@@ -469,16 +468,17 @@ var kaijuBattle = (function () {
         var gameFound = false;
         dataController.fb.activeGamesRef.once('value', function (snapshot) {
             snapshot.forEach(function (childSnap) {
-                gameFound = true;
                 var childData = childSnap.val();
                 if (!childData.player1Key) {
                     this.killGameRecord(childSnap.key);
                     return;
                 }
-
+                
                 this.getUserInfo(childData.player1Key, function (userInfo) {
                     if (userInfo) {
-                        if (!childData.player2Key) {
+                        if (!childData.player2Key && playerKey !== childData.player1Key) {
+                            gameFound = true;
+
                             // add yourself as player 2 and start the timer.
                             childData.player2Key = playerKey;
                             childData.player2Name = playerName;
@@ -502,7 +502,13 @@ var kaijuBattle = (function () {
     };
 
     GameController.prototype.startNextRound = function (key) {
-        console.log("TODO: Start next round.")
+        this.getGameInfo(key, gameInfo => {
+            gameInfo.player1Kaiju = "";
+            gameInfo.player2Kaiju = "";
+            gameInfo.timeLeft = dataController.baseRoundTime;
+            this.updateGameInfo(key, gameInfo);
+            this.startRoundTimer(key);
+        });
     }
 
     GameController.prototype.startRoundTimer = function (key) {
@@ -849,7 +855,7 @@ var kaijuBattle = (function () {
             } else {
                 $playArea.find(".card-img-top").addClass("d-none");
                 $playArea.find(".kaiju-list").removeClass("d-none");
-                $playerCard.find(".list-group-item.selected").removeClass("selected");
+                $playArea.find(".list-group-item.selected").removeClass("selected");
             }
 
             $opponentCard.closest(".col").removeClass("d-none");
@@ -857,7 +863,7 @@ var kaijuBattle = (function () {
             $opponentCard.closest(".col").addClass("d-none");
             $playArea.find(".card-img-top").addClass("d-none");
             $playArea.find(".kaiju-list").removeClass("d-none");
-            $playerCard.find(".list-group-item.selected").removeClass("selected");
+            $playArea.find(".list-group-item.selected").removeClass("selected");
         }
     }
 
